@@ -44,9 +44,9 @@
 
     function toggleTheme() {
         document.body.classList.toggle('light-mode');
-        const isLight = document.body.classList.contains('light-mode');
-        document.getElementById('theme-toggle').textContent = isLight ? '☀️ Modo Escuro' : '🌙 Modo Claro';
-        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        const isDark = document.body.classList.contains('light-mode');
+        document.getElementById('theme-toggle').textContent = isDark ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
 
     function showStatus(msg, color = '#25D366') {
@@ -608,9 +608,9 @@
 
 
         
-        if (localStorage.getItem('theme') === 'light') {
+        if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('light-mode');
-            document.getElementById('theme-toggle').textContent = '☀️ Modo Escuro';
+            document.getElementById('theme-toggle').textContent = '☀️ Modo Claro';
         }
         generatePreview();
     };
