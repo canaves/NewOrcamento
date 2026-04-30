@@ -343,12 +343,12 @@
             </div>
 
             <div class="payment-box pdf-no-break">
-                <h3>🛡️ GARANTIAS</h3>
+                <h3>🛡️ GARANTIA</h3>
                 <div class="payment-option">
-                    <span><b>Equipamentos:</b> os equipamentos têm garantia de ${garantiaTexto}.</span>
+                    <span><b>Equipamentos:</b> ${garantiaTexto} de garantia contra defeitos de fabricação.</span>
                 </div>
-                <div style="margin-top: 10px; font-size: 8.5pt; color: #64748b; border-top: 1px solid #c8dcea; padding-top: 8px;">
-                    * Orçamento válido por ${validade} dias. Data de emissão: ${dataHoje}.
+                <div style="margin-top: 10px; font-size: 10pt; color: #334155; border-top: 1px solid #c8dcea; padding-top: 8px; font-weight: 600;">
+                    ⏳ Validade da Proposta: Condições e valores garantidos por ${validade} dias (Data de emissão: ${dataHoje}).
                 </div>
             </div>
 
