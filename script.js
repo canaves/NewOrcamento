@@ -538,11 +538,15 @@
 			// Usando o allorigins como ponte para evitar o bloqueio de CORS
 // Usando o corsproxy.io como ponte (mais estável)
 				const urlGoogle = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRl0BSck7md3oMtEG4Fs9EfPz11Cwwp63GWERyEFe02BsnEmjJucDDIQkIC3a2fniSsyy28ymrbebjE/pub?gid=0&single=true&output=csv';
-				const urlCSV = 'https://corsproxy.io/?' + encodeURIComponent(urlGoogle);
+                const cacheBuster = `&_=${Date.now()}`;
+				const urlCSV = 'https://corsproxy.io/?' + encodeURIComponent(urlGoogle + cacheBuster);
 			
 			try {
 				console.log("Tentando carregar os produtos...");
-				const response = await fetch(urlCSV);
+				const response = await fetch(urlCSV, { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Falha ao carregar planilha: ${response.status}`);
+                }
 				const data = await response.text();
 				
 				// Pula a primeira linha (cabeçalho) e separa as linhas independentemente do sistema
