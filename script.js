@@ -1,5 +1,62 @@
 
     const brl = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    function parseBrazilianNumber(value) {
+        if (typeof value === 'number') {
+            return Number.isFinite(value) ? value : 0;
+        }
+
+        const text = String(value ?? '').trim();
+        if (!text) return 0;
+
+        const clean = text.replace(/[^\d,.-]/g, '');
+        if (!clean || clean === '-' || clean === ',' || clean === '.') return 0;
+
+        const lastComma = clean.lastIndexOf(',');
+        const lastDot = clean.lastIndexOf('.');
+        let normalized = clean;
+
+        if (lastComma > -1 && lastDot > -1) {
+            normalized = lastComma > lastDot
+                ? clean.replace(/\./g, '').replace(',', '.')
+                : clean.replace(/,/g, '');
+        } else if (lastComma > -1) {
+            normalized = clean.replace(/\./g, '').replace(',', '.');
+        } else if (lastDot > -1) {
+            const parts = clean.split('.');
+            const looksLikeThousands = parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && parts[0].length <= 3);
+            normalized = looksLikeThousands ? clean.replace(/\./g, '') : clean;
+        }
+
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function formatBrazilianNumber(value, minimumFractionDigits = 0, maximumFractionDigits = 2) {
+        if (value === null || value === undefined || String(value).trim() === '') return '';
+        return new Intl.NumberFormat('pt-BR', {
+            minimumFractionDigits,
+            maximumFractionDigits
+        }).format(parseBrazilianNumber(value));
+    }
+
+    function formatMoneyInputValue(value) {
+        return formatBrazilianNumber(value, 2, 2);
+    }
+
+    function formatDecimalInputValue(value) {
+        return formatBrazilianNumber(value, 0, 2);
+    }
+
+    function formatMoneyInput(input) {
+        input.value = formatMoneyInputValue(input.value);
+        updateCalculations();
+    }
+
+    function formatDecimalInput(input) {
+        input.value = formatDecimalInputValue(input.value);
+        updateCalculations();
+    }
     
     function setupPhoneMasks() {
         document.querySelectorAll('.phone-mask').forEach(input => {
@@ -45,7 +102,7 @@
     function toggleTheme() {
         document.body.classList.toggle('light-mode');
         const isDark = document.body.classList.contains('light-mode');
-        document.getElementById('theme-toggle').textContent = isDark ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+        document.getElementById('theme-toggle').textContent = isDark ? 'Modo Claro' : 'Modo Escuro';
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
 
@@ -64,11 +121,14 @@
         const div = document.createElement('div');
         div.className = 'item-row';
         div.id = `item-${itemCount}`;
+        const qtdValue = formatDecimalInputValue(qtd);
+        const valValue = formatMoneyInputValue(val);
+        const acrValue = formatDecimalInputValue(acr);
 		div.innerHTML = `
             <div><label>Descrição do Item</label><input class="item-desc" list="lista-produtos" value="${desc}" onchange="autoPreencher(this)" placeholder="Ex: Cerca Elétrica 6 fios"></div>
-            <div><label>Qtd</label><input type="text" class="item-qtd" value="${qtd}" oninput="updateCalculations()" placeholder="0"></div>
-            <div><label>Valor. Unit.</label><input type="text" class="item-val" value="${val}" step="0.01" oninput="updateCalculations()" placeholder="0,00"></div>
-            <div><label>Acrésc. %</label><input type="text" class="item-acr" value="${acr}" step="0.01" oninput="updateCalculations()" placeholder="0"></div>
+            <div><label>Qtd</label><input type="text" class="item-qtd" value="${qtdValue}" oninput="updateCalculations()" onblur="formatDecimalInput(this)" placeholder="0"></div>
+            <div><label>Valor. Unit.</label><input type="text" class="item-val" value="${valValue}" step="0.01" oninput="updateCalculations()" onblur="formatMoneyInput(this)" placeholder="0,00"></div>
+            <div><label>Acrésc. %</label><input type="text" class="item-acr" value="${acrValue}" step="0.01" oninput="updateCalculations()" onblur="formatDecimalInput(this)" placeholder="0"></div>
             <div><label>Total</label><input class="item-total" readonly value="R$ 0,00"></div>
             <button class="btn-remove" onclick="removeItem(${itemCount})" title="Remover">✕</button>
         `;
@@ -101,15 +161,15 @@
     function updateCalculations() {
         let subtotal = 0;
         document.querySelectorAll('.item-row').forEach(row => {
-            const qtd = parseFloat(row.querySelector('.item-qtd').value) || 0;
-            const val = parseFloat(row.querySelector('.item-val').value) || 0;
-            const acr = parseFloat(row.querySelector('.item-acr').value) || 0;
+            const qtd = parseBrazilianNumber(row.querySelector('.item-qtd').value);
+            const val = parseBrazilianNumber(row.querySelector('.item-val').value);
+            const acr = parseBrazilianNumber(row.querySelector('.item-acr').value);
             const total = (qtd * val) * (1 + acr / 100);
             row.querySelector('.item-total').value = brl(total);
             subtotal += total;
         });
 
-        const mao = parseFloat(document.getElementById('mao').value) || 0;
+        const mao = parseBrazilianNumber(document.getElementById('mao').value);
         const totalGeral = subtotal + mao;
         document.getElementById('total-geral').value = brl(totalGeral);
         return { subtotal, mao, totalGeral };
@@ -176,9 +236,9 @@
 
             const toolbar = [
                 '<div class="toolbar">',
-                '  <button class="btn-primary" onclick="window.print()">&#128196; Imprimir / Salvar PDF<\/button>',
+                '  <button class="btn-primary" onclick="window.print()">Gerar / Salvar PDF<\/button>',
                 '  <button class="btn-back" onclick="window.close()">&#8592; Fechar<\/button>',
-                '  <span class="toolbar-tip">&#128161; Imprimir &rarr; desmarque "Cabe&ccedil;alhos e rodap&eacute;s" para PDF limpo<\/span>',
+                '  <span class="toolbar-tip">Ao salvar, desmarque "Cabe&ccedil;alhos e rodap&eacute;s" para um PDF limpo<\/span>',
                 '<\/div>'
             ].join('\n');
 
@@ -233,9 +293,11 @@
             var preview = document.getElementById('logo-preview');
             preview.src = e.target.result;
             preview.style.display = 'inline-block';
+            var placeholder = document.getElementById('logo-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
             var headerLogo = document.querySelector('header .brand img');
             if (headerLogo) headerLogo.src = e.target.result;
-            document.getElementById('logo-status').textContent = '✅ ' + file.name;
+            document.getElementById('logo-status').textContent = 'Logotipo carregado: ' + file.name;
             generatePreview();
         };
         reader.readAsDataURL(file);
@@ -262,7 +324,8 @@
         const validade = document.getElementById('validade').value;
         const garantiaMeses = document.getElementById('garantia-meses').value;
         const garantiaTexto = formatWarrantyPeriod(garantiaMeses);
-        const descVista = parseFloat(document.getElementById('desc-vista').value) || 0;
+        const descVista = parseBrazilianNumber(document.getElementById('desc-vista').value);
+        const descVistaTexto = formatDecimalInputValue(descVista);
         const condPag = document.getElementById('cond-pag').value;
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         const totalAVista = data.totalGeral * (1 - descVista / 100);
@@ -272,10 +335,11 @@
 		
 		document.querySelectorAll('.item-row').forEach(row => {
 			const desc = row.querySelector('.item-desc').value || 'Item sem descrição';
-			const qtd = row.querySelector('.item-qtd').value || '0';
+			const qtdValor = parseBrazilianNumber(row.querySelector('.item-qtd').value);
+			const qtd = formatDecimalInputValue(qtdValor) || '0';
 			const total = row.querySelector('.item-total').value;
 			
-			if (parseFloat(qtd) > 0) {
+			if (qtdValor > 0) {
 				// Adicionamos a coluna do contador e mudamos o colspan do desc de 3 para 2
 				rowsHtml += `<tr><td class="text-center">${contador}</td><td colspan="2">${desc}</td><td class="text-center">${qtd}</td><td class="text-right bold">${total}</td></tr>`;
 				
@@ -331,9 +395,9 @@
             </table>
 
             <div class="payment-box pdf-no-break">
-                <h3>💳 CONDIÇÕES DE PAGAMENTO</h3>
+                <h3>CONDIÇÕES DE PAGAMENTO</h3>
                 <div class="payment-option">
-                    <span><b>À Vista:</b> Desconto de ${descVista}%</span>
+                    <span><b>À Vista:</b> Desconto de ${descVistaTexto}%</span>
                     <span class="bold" style="color: #10b981;">${brl(totalAVista)}</span>
                 </div>
                 <div class="payment-option">
@@ -343,12 +407,12 @@
             </div>
 
             <div class="payment-box pdf-no-break">
-                <h3>🛡️ GARANTIA</h3>
+                <h3>GARANTIA</h3>
                 <div class="payment-option">
                     <span><b>Equipamentos:</b> ${garantiaTexto} de garantia contra defeitos de fabricação.</span>
                 </div>
                 <div style="margin-top: 10px; font-size: 10pt; color: #334155; border-top: 1px solid #c8dcea; padding-top: 8px; font-weight: 600;">
-                    ⏳ Validade da Proposta: Condições e valores garantidos por ${validade} dias (Data de emissão: ${dataHoje}).
+                    Validade da Proposta: Condições e valores garantidos por ${validade} dias (Data de emissão: ${dataHoje}).
                 </div>
             </div>
 
@@ -362,7 +426,7 @@
     async function generatePreview() {
         const html = buildPDFHTML();
         document.getElementById('pdf-content').innerHTML = html;
-        showStatus('Prévia atualizada!');
+        showStatus('Orçamento atualizado.');
     }
 
     async function downloadPDF() {
@@ -393,7 +457,8 @@
         const data = updateCalculations();
         const cliNome = document.getElementById('cli-nome').value;
         const cliFone = document.getElementById('cli-fone').value.replace(/\D/g, '');
-        const descVista = parseFloat(document.getElementById('desc-vista').value) || 0;
+        const descVista = parseBrazilianNumber(document.getElementById('desc-vista').value);
+        const descVistaTexto = formatDecimalInputValue(descVista);
         
         if (!cliFone) {
             showStatus('Informe o telefone do cliente!', '#ff4d4d');
@@ -401,8 +466,8 @@
         }
 
         const msg = `Olá ${cliNome || 'Cliente'}, segue o orçamento da *Prevent Master*:\n\n` +
-                    `💰 *Total:* ${brl(data.totalGeral)}\n` +
-                    `📉 *À Vista (${descVista}% OFF):* ${brl(data.totalGeral * (1 - descVista/100))}\n\n` +
+                    `*Total:* ${brl(data.totalGeral)}\n` +
+                    `*À Vista (${descVistaTexto}% OFF):* ${brl(data.totalGeral * (1 - descVista/100))}\n\n` +
                     `Estou enviando o PDF detalhado em seguida.`;
         
         window.open(`https://api.whatsapp.com/send?phone=55${cliFone}&text=${encodeURIComponent(msg)}`, '_blank');
@@ -430,9 +495,9 @@
         document.querySelectorAll('.item-row').forEach(row => {
             items.push({
                 descricao: row.querySelector('.item-desc').value,
-                qtd: parseFloat(row.querySelector('.item-qtd').value) || 0,
-                valorUnit: parseFloat(row.querySelector('.item-val').value) || 0,
-                acrescimo: parseFloat(row.querySelector('.item-acr').value) || 0,
+                qtd: parseBrazilianNumber(row.querySelector('.item-qtd').value),
+                valorUnit: parseBrazilianNumber(row.querySelector('.item-val').value),
+                acrescimo: parseBrazilianNumber(row.querySelector('.item-acr').value),
             });
         });
 
@@ -454,10 +519,10 @@
             },
             orcamento: {
                 itens: items,
-                maoDeObra: parseFloat(document.getElementById('mao').value) || 0,
+                maoDeObra: parseBrazilianNumber(document.getElementById('mao').value),
                 validade: document.getElementById('validade').value,
                 garantiaMeses: document.getElementById('garantia-meses').value,
-                descontoVista: parseFloat(document.getElementById('desc-vista').value) || 0,
+                descontoVista: parseBrazilianNumber(document.getElementById('desc-vista').value),
                 condicoesPagamento: document.getElementById('cond-pag').value,
                 totalGeral: data.totalGeral,
             },
@@ -472,7 +537,7 @@
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-        showStatus(`JSON exportado: ${filename}`);
+        showStatus(`Orçamento baixado: ${filename}`);
     }
 
     function importJSON(event) {
@@ -508,10 +573,10 @@
                     if (Array.isArray(orc.itens)) {
                         orc.itens.forEach(it => addItem(it.descricao, it.qtd, it.valorUnit, it.acrescimo));
                     }
-                    document.getElementById('mao').value = orc.maoDeObra || 0;
+                    document.getElementById('mao').value = formatMoneyInputValue(orc.maoDeObra || 0);
                     document.getElementById('validade').value = orc.validade || 7;
                     document.getElementById('garantia-meses').value = orc.garantiaMeses || 12;
-                    document.getElementById('desc-vista').value = orc.descontoVista || 0;
+                    document.getElementById('desc-vista').value = formatDecimalInputValue(orc.descontoVista || 0);
                     document.getElementById('cond-pag').value = orc.condicoesPagamento || '';
                 }
 
@@ -519,12 +584,12 @@
                 updateFilenamePreview();
                 setupPhoneMasks();
                 setupDocumentMasks();
-                document.getElementById('import-status').textContent = `✅ "${file.name}" carregado com sucesso!`;
-                showStatus('Dados importados com sucesso!');
+                document.getElementById('import-status').textContent = `Arquivo carregado: ${file.name}`;
+                showStatus('Orçamento carregado com sucesso!');
                 generatePreview();
             } catch (err) {
-                document.getElementById('import-status').textContent = '❌ Arquivo JSON inválido.';
-                showStatus('Erro ao importar JSON', '#ff4d4d');
+                document.getElementById('import-status').textContent = 'Arquivo JSON inválido.';
+                showStatus('Erro ao carregar orçamento', '#ff4d4d');
             }
             event.target.value = '';
         };
@@ -577,8 +642,8 @@
 							// O .replace(/"/g, '') limpa aspas indesejadas que o Sheets pode colocar
 							codigo: colunas[0].replace(/"/g, '').trim(),
 							descricao: colunas[1].replace(/"/g, '').trim(),
-							valor: colunas[2].replace(/"/g, '').trim().replace(',', '.'),
-							acrescimo: (colunas[3] || '0').replace(/"/g, '').trim().replace(',', '.')
+							valor: formatMoneyInputValue(colunas[2].replace(/"/g, '').trim()),
+							acrescimo: formatDecimalInputValue((colunas[3] || '0').replace(/"/g, '').trim())
 						};
 						bancoProdutos.push(produto);
 						
@@ -614,7 +679,7 @@
         
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('light-mode');
-            document.getElementById('theme-toggle').textContent = '☀️ Modo Claro';
+            document.getElementById('theme-toggle').textContent = 'Modo Claro';
         }
         generatePreview();
     };
