@@ -95,6 +95,10 @@
                 <label>Desconto à Vista (%)</label>
                 <input type="text" id="desc-vista" value="10" step="0.1" oninput="updateCalculations()" onblur="formatDecimalInput(this)">
             </div>
+            <div>
+                <label>Taxa de Maquininha (%)</label>
+                <input type="text" id="taxa-maquininha" value="0" step="0.1" oninput="updateCalculations()" onblur="formatDecimalInput(this)">
+            </div>
             <div class="span-2">
                 <label>Outras Condições (ex: Parcelamento)</label>
                 <input id="cond-pag" value="Parcelado em até 6x sem juros no Cartão">

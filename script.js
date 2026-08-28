@@ -160,19 +160,31 @@
 
     function updateCalculations() {
         let subtotal = 0;
+        let totalQuantidadeProdutos = 0;
+        const itemRows = [];
         document.querySelectorAll('.item-row').forEach(row => {
             const qtd = parseBrazilianNumber(row.querySelector('.item-qtd').value);
             const val = parseBrazilianNumber(row.querySelector('.item-val').value);
             const acr = parseBrazilianNumber(row.querySelector('.item-acr').value);
             const total = (qtd * val) * (1 + acr / 100);
-            row.querySelector('.item-total').value = brl(total);
             subtotal += total;
+            if (qtd > 0) totalQuantidadeProdutos += qtd;
+            itemRows.push({ row, qtd, total });
         });
 
         const mao = parseBrazilianNumber(document.getElementById('mao').value);
-        const totalGeral = subtotal + mao;
+        const totalBase = subtotal + mao;
+        const taxaMaquininhaEl = document.getElementById('taxa-maquininha');
+        const taxaMaquininha = taxaMaquininhaEl ? parseBrazilianNumber(taxaMaquininhaEl.value) : 0;
+        const valorTaxaMaquininha = totalBase * (taxaMaquininha / 100);
+        const totalGeral = totalBase + valorTaxaMaquininha;
+        const taxaPorProduto = totalQuantidadeProdutos > 0 ? valorTaxaMaquininha / totalQuantidadeProdutos : 0;
+        itemRows.forEach(({ row, qtd, total }) => {
+            const totalComTaxa = total + (qtd > 0 ? taxaPorProduto * qtd : 0);
+            row.querySelector('.item-total').value = brl(totalComTaxa);
+        });
         document.getElementById('total-geral').value = brl(totalGeral);
-        return { subtotal, mao, totalGeral };
+        return { subtotal, mao, totalBase, taxaMaquininha, valorTaxaMaquininha, taxaPorProduto, totalQuantidadeProdutos, totalGeral };
     }
 
     function formatWarrantyPeriod(monthsValue) {
@@ -328,7 +340,7 @@
         const descVistaTexto = formatDecimalInputValue(descVista);
         const condPag = document.getElementById('cond-pag').value;
         const dataHoje = new Date().toLocaleDateString('pt-BR');
-        const totalAVista = data.totalGeral * (1 - descVista / 100);
+        const totalAVista = data.totalBase * (1 - descVista / 100);
 
 		let rowsHtml = '';
 		let contador = 1; // Criamos um contador começando em 1
@@ -337,11 +349,11 @@
 			const desc = row.querySelector('.item-desc').value || 'Item sem descrição';
 			const qtdValor = parseBrazilianNumber(row.querySelector('.item-qtd').value);
 			const qtd = formatDecimalInputValue(qtdValor) || '0';
-			const total = row.querySelector('.item-total').value;
+			const totalComTaxa = parseBrazilianNumber(row.querySelector('.item-total').value);
 			
 			if (qtdValor > 0) {
 				// Adicionamos a coluna do contador e mudamos o colspan do desc de 3 para 2
-				rowsHtml += `<tr><td class="text-center">${contador}</td><td colspan="2">${desc}</td><td class="text-center">${qtd}</td><td class="text-right bold">${total}</td></tr>`;
+				rowsHtml += `<tr><td class="text-center">${contador}</td><td colspan="2">${desc}</td><td class="text-center">${qtd}</td><td class="text-right bold">${brl(totalComTaxa)}</td></tr>`;
 				
 				contador++; // Aumenta o número para a próxima linha (1, 2, 3...)
 			}
@@ -467,7 +479,7 @@
 
         const msg = `Olá ${cliNome || 'Cliente'}, segue o orçamento da *Prevent Master*:\n\n` +
                     `*Total:* ${brl(data.totalGeral)}\n` +
-                    `*À Vista (${descVistaTexto}% OFF):* ${brl(data.totalGeral * (1 - descVista/100))}\n\n` +
+                    `*À Vista (${descVistaTexto}% OFF):* ${brl(data.totalBase * (1 - descVista/100))}\n\n` +
                     `Estou enviando o PDF detalhado em seguida.`;
         
         window.open(`https://api.whatsapp.com/send?phone=55${cliFone}&text=${encodeURIComponent(msg)}`, '_blank');
@@ -523,6 +535,7 @@
                 validade: document.getElementById('validade').value,
                 garantiaMeses: document.getElementById('garantia-meses').value,
                 descontoVista: parseBrazilianNumber(document.getElementById('desc-vista').value),
+                taxaMaquininha: parseBrazilianNumber(document.getElementById('taxa-maquininha').value),
                 condicoesPagamento: document.getElementById('cond-pag').value,
                 totalGeral: data.totalGeral,
             },
@@ -577,6 +590,7 @@
                     document.getElementById('validade').value = orc.validade || 7;
                     document.getElementById('garantia-meses').value = orc.garantiaMeses || 12;
                     document.getElementById('desc-vista').value = formatDecimalInputValue(orc.descontoVista || 0);
+                    document.getElementById('taxa-maquininha').value = formatDecimalInputValue(orc.taxaMaquininha || 0);
                     document.getElementById('cond-pag').value = orc.condicoesPagamento || '';
                 }
 
