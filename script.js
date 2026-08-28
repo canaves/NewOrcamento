@@ -352,6 +352,7 @@
         const parcelasPagamento = getParcelasPagamento();
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         const totalAVista = data.totalGeral * (1 - descVista / 100);
+        const observacoes = (document.getElementById('observacoes')?.value || '').trim();
 
 		let rowsHtml = '';
 		let contador = 1; // Criamos um contador começando em 1
@@ -438,6 +439,15 @@
                     Validade da Proposta: Condições e valores garantidos por ${validade} dias (Data de emissão: ${dataHoje}).
                 </div>
             </div>
+
+            ${observacoes ? `
+            <div class="payment-box pdf-no-break" style="margin-top: 12px; padding: 8px 12px;">
+                <h3 style="margin-bottom: 4px; padding-bottom: 4px;">OBSERVAÇÕES</h3>
+                <div style="font-size: 10pt; color: #334155; line-height: 1.25; white-space: pre-line; margin-top: 0;">
+                    ${observacoes}
+                </div>
+            </div>
+            ` : ''}
 
             <div style="margin-top: 40px; text-align: center; font-size: 9pt; color: #94a3b8; page-break-inside: avoid;">
                 <p>Prevent Master - Construindo confiança através da inovação em segurança</p>
@@ -551,6 +561,7 @@
                 taxaMaquininha: parseBrazilianNumber(document.getElementById('taxa-maquininha').value),
                 parcelasPagamento: getParcelasPagamento(),
                 condicoesPagamento: `Parcelado em até ${getParcelasPagamento()}x sem juros no Cartão`,
+                observacoes: document.getElementById('observacoes')?.value || '',
                 totalGeral: data.totalGeral,
             },
             exportadoEm: new Date().toISOString(),
@@ -606,6 +617,7 @@
                     document.getElementById('desc-vista').value = formatDecimalInputValue(orc.descontoVista || 0);
                     document.getElementById('taxa-maquininha').value = formatDecimalInputValue(orc.taxaMaquininha || 0);
                     document.getElementById('parcelas-pagamento').value = orc.parcelasPagamento || extractParcelasFromText(orc.condicoesPagamento);
+                    document.getElementById('observacoes').value = orc.observacoes || '';
                 }
 
                 updateCalculations();
