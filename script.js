@@ -195,6 +195,17 @@
         return `${months} meses`;
     }
 
+    function getParcelasPagamento() {
+        const input = document.getElementById('parcelas-pagamento');
+        const parcelas = input ? parseInt(parseBrazilianNumber(input.value), 10) : 10;
+        return Number.isFinite(parcelas) && parcelas > 0 ? parcelas : 1;
+    }
+
+    function extractParcelasFromText(text) {
+        const match = String(text || '').match(/(\d+)\s*x/i);
+        return match ? parseInt(match[1], 10) : 10;
+    }
+
 	function openPDFPage() {
         const logoImg = document.querySelector('header .brand img');
 
@@ -338,7 +349,7 @@
         const garantiaTexto = formatWarrantyPeriod(garantiaMeses);
         const descVista = parseBrazilianNumber(document.getElementById('desc-vista').value);
         const descVistaTexto = formatDecimalInputValue(descVista);
-        const condPag = document.getElementById('cond-pag').value;
+        const parcelasPagamento = getParcelasPagamento();
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         const totalAVista = data.totalGeral * (1 - descVista / 100);
 
@@ -413,7 +424,7 @@
                     <span class="bold" style="color: #10b981;">${brl(totalAVista)}</span>
                 </div>
                 <div class="payment-option">
-                    <span><b>Outras Condições:</b> ${condPag}</span>
+                    <span><b>Á Prazo:</b> Parcelado em até ${parcelasPagamento}x sem juros no Cartão.</span>
                     <span class="bold">${brl(data.totalGeral)}</span>
                 </div>
             </div>
@@ -471,6 +482,7 @@
         const cliFone = document.getElementById('cli-fone').value.replace(/\D/g, '');
         const descVista = parseBrazilianNumber(document.getElementById('desc-vista').value);
         const descVistaTexto = formatDecimalInputValue(descVista);
+        const parcelasPagamento = getParcelasPagamento();
         
         if (!cliFone) {
             showStatus('Informe o telefone do cliente!', '#ff4d4d');
@@ -480,6 +492,7 @@
         const msg = `Olá ${cliNome || 'Cliente'}, segue o orçamento da *Prevent Master*:\n\n` +
                     `*Total:* ${brl(data.totalGeral)}\n` +
                     `*À Vista (${descVistaTexto}% OFF):* ${brl(data.totalGeral * (1 - descVista/100))}\n\n` +
+                    `*Á Prazo:* Parcelado em até ${parcelasPagamento}x sem juros no Cartão.\n\n` +
                     `Estou enviando o PDF detalhado em seguida.`;
         
         window.open(`https://api.whatsapp.com/send?phone=55${cliFone}&text=${encodeURIComponent(msg)}`, '_blank');
@@ -536,7 +549,8 @@
                 garantiaMeses: document.getElementById('garantia-meses').value,
                 descontoVista: parseBrazilianNumber(document.getElementById('desc-vista').value),
                 taxaMaquininha: parseBrazilianNumber(document.getElementById('taxa-maquininha').value),
-                condicoesPagamento: document.getElementById('cond-pag').value,
+                parcelasPagamento: getParcelasPagamento(),
+                condicoesPagamento: `Parcelado em até ${getParcelasPagamento()}x sem juros no Cartão`,
                 totalGeral: data.totalGeral,
             },
             exportadoEm: new Date().toISOString(),
@@ -591,7 +605,7 @@
                     document.getElementById('garantia-meses').value = orc.garantiaMeses || 12;
                     document.getElementById('desc-vista').value = formatDecimalInputValue(orc.descontoVista || 0);
                     document.getElementById('taxa-maquininha').value = formatDecimalInputValue(orc.taxaMaquininha || 0);
-                    document.getElementById('cond-pag').value = orc.condicoesPagamento || '';
+                    document.getElementById('parcelas-pagamento').value = orc.parcelasPagamento || extractParcelasFromText(orc.condicoesPagamento);
                 }
 
                 updateCalculations();

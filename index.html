@@ -100,8 +100,8 @@
                 <input type="text" id="taxa-maquininha" value="0" step="0.1" oninput="updateCalculations()" onblur="formatDecimalInput(this)">
             </div>
             <div class="span-2">
-                <label>Outras Condições (ex: Parcelamento)</label>
-                <input id="cond-pag" value="Parcelado em até 6x sem juros no Cartão">
+                <label>Quantidade de Parcelas</label>
+                <input type="text" id="parcelas-pagamento" inputmode="numeric" value="10" oninput="updateCalculations()" placeholder="10">
             </div>
         </div>
     </div>
