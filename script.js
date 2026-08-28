@@ -340,7 +340,7 @@
         const descVistaTexto = formatDecimalInputValue(descVista);
         const condPag = document.getElementById('cond-pag').value;
         const dataHoje = new Date().toLocaleDateString('pt-BR');
-        const totalAVista = data.totalBase * (1 - descVista / 100);
+        const totalAVista = data.totalGeral * (1 - descVista / 100);
 
 		let rowsHtml = '';
 		let contador = 1; // Criamos um contador começando em 1
@@ -409,7 +409,7 @@
             <div class="payment-box pdf-no-break">
                 <h3>CONDIÇÕES DE PAGAMENTO</h3>
                 <div class="payment-option">
-                    <span><b>À Vista:</b> Desconto de ${descVistaTexto}%</span>
+                    <span><b>À Vista:</b> Desconto de ${descVistaTexto}% no PIX ou Dinheiro.</span>
                     <span class="bold" style="color: #10b981;">${brl(totalAVista)}</span>
                 </div>
                 <div class="payment-option">
@@ -479,7 +479,7 @@
 
         const msg = `Olá ${cliNome || 'Cliente'}, segue o orçamento da *Prevent Master*:\n\n` +
                     `*Total:* ${brl(data.totalGeral)}\n` +
-                    `*À Vista (${descVistaTexto}% OFF):* ${brl(data.totalBase * (1 - descVista/100))}\n\n` +
+                    `*À Vista (${descVistaTexto}% OFF):* ${brl(data.totalGeral * (1 - descVista/100))}\n\n` +
                     `Estou enviando o PDF detalhado em seguida.`;
         
         window.open(`https://api.whatsapp.com/send?phone=55${cliFone}&text=${encodeURIComponent(msg)}`, '_blank');
